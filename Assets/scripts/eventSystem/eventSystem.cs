@@ -5,57 +5,254 @@ using UnityEngine;
 
 public class eventSystem : MonoBehaviour
 {
-    public int keyType = 0; // 키 타입
-    public int totalKeys = 0; // 모은 열쇠 개수
-    public int keys = 0; // 모은 열쇠 개수
-    public int key1 = 0; // 1번 키 개수
-    public int key2 = 0; // 2번 키 개수
+    public int Stage = 1;
+    public GameObject objectToSpawn; // 생성할 오브젝트
+    public AudioClip[] audioClips; // 여러 개의 오디오 클립 배열
     
-    
+    private GameObject textUI; // 텍스트 UI
+    private AudioSource audioSource1;
+    private AudioSource audioSource2;
+
+       
     // Start is called before the first frame update
     void Start()
     {
-        // 랜덤 true or false
-        bool isTrue = RandomFunction(0, 2) == 0 ? true : false;
-        
-        string targetKeyTag = isTrue ? "key1" : "key2";
-        string destroyTag = isTrue ? "key2" : "key1";
-        keyType = isTrue ? 1 : 2;
-
-        // 사용안하는 키 제거
-        foreach (GameObject obj in GameObject.FindGameObjectsWithTag(destroyTag))
+        // text ui set
+        GameObject[] findUI = GameObject.FindGameObjectsWithTag("textUI");
+        foreach (GameObject ui in findUI)
         {
-            Destroy(obj);
+            textUI = ui;
         }
 
-        // 총 개수 반영
-        totalKeys = GameObject.FindGameObjectsWithTag(targetKeyTag).Length;
+        audioSource1 = GetComponent<AudioSource>();
+        if (audioSource1 == null)
+        {
+            Debug.LogError("AudioSource component missing from this game object. Please add one.");
+        } else {
+            audioSource1.maxDistance = 400f;
+            audioSource1.spatialBlend = 1f;
+            audioSource1.rolloffMode = AudioRolloffMode.Linear;
+        }
+
+        audioSource2 = GetComponent<AudioSource>();
+        if (audioSource2 == null)
+        {
+            Debug.LogError("AudioSource component missing from this game object. Please add one.");
+        } else {
+            audioSource2.maxDistance = 400f;
+            audioSource2.spatialBlend = 1f;
+            audioSource2.rolloffMode = AudioRolloffMode.Linear;
+        }
+
+        StartCoroutine(Openning());
     }
 
     // Update is called once per frame
     void Update()
     {
-        // "key1" 태그를 가진 모든 게임 오브젝트
-        GameObject[] key1Objects = GameObject.FindGameObjectsWithTag("key1");
-        key1 = key1Objects.Length;
         
-        // "key2" 태그를 가진 모든 게임 오브젝트
-        GameObject[] key2Objects = GameObject.FindGameObjectsWithTag("key2");
-        key2 = key2Objects.Length;
+    }
 
-        // 타입에 따라 키 개수 반영
-        if (keyType == 1)
-        {
-            keys = totalKeys - key1;
-        }
-        else
-        {
-            keys = totalKeys - key2;
+    void Create(float count) {
+        for (int i = 0; i < count; i++) {
+            Instantiate(objectToSpawn, transform.position, transform.rotation);
         }
     }
 
-    float RandomFunction(int min, int max)
+    void StartSound() {
+        audioSource1.loop = false;
+        audioSource1.pitch = 0.12f;
+        audioSource1.clip = audioClips[0];
+        audioSource1.Play();
+    }
+
+    void CrySound() {
+        audioSource2.loop = false;
+        audioSource2.pitch = 0.8f;
+        audioSource2.clip = audioClips[1];
+        audioSource2.Play();
+    }
+
+    IEnumerator Openning()
     {
-        return Random.Range(min, max);
+        yield return new WaitForSeconds(10f);
+        textUI.GetComponent<text>().TextView("잠시 뒤에 적병이 몰려옵니다.", 7f);
+
+        yield return new WaitForSeconds(10f);
+        textUI.GetComponent<text>().TextView("You are defeated if you die or an enemy invades.", 7f);
+
+        yield return new WaitForSeconds(10f);
+        
+        StartCoroutine(Stage1());
+    }
+
+    IEnumerator Stage1()
+    {
+        CrySound();
+        StartSound();
+        textUI.GetComponent<text>().TextView("Stage 1", 8f);
+        Create(20);
+        yield return new WaitForSeconds(50f);
+
+        CrySound();
+        textUI.GetComponent<text>().TextView("추가 병력이 몰려옵니다!", 8f);
+        Create(15);
+        yield return new WaitForSeconds(20f);
+        
+        textUI.GetComponent<text>().TextView("잠시 뒤에 적병이 몰려옵니다.", 7f);
+        yield return new WaitForSeconds(30f);
+
+        StartCoroutine(Stage2());
+    }
+
+    IEnumerator Stage2()
+    {
+        CrySound();
+        StartSound();
+        textUI.GetComponent<text>().TextView("Stage 2", 8f);
+        Create(20);
+        yield return new WaitForSeconds(50f);
+
+        CrySound();
+        textUI.GetComponent<text>().TextView("추가 병력이 몰려옵니다!", 8f);
+        Create(15);
+        yield return new WaitForSeconds(50f);
+        
+        textUI.GetComponent<text>().TextView("잠시 뒤에 적병이 몰려옵니다.", 7f);
+        yield return new WaitForSeconds(30f);
+
+        StartCoroutine(Stage3());
+    }
+
+    IEnumerator Stage3()
+    {
+        CrySound();
+        StartSound();
+        textUI.GetComponent<text>().TextView("Stage 3", 8f);
+        Create(30);
+        yield return new WaitForSeconds(50f);
+
+        CrySound();
+        textUI.GetComponent<text>().TextView("추가 병력이 몰려옵니다!", 8f);
+        Create(30);
+        yield return new WaitForSeconds(50f);
+        
+        textUI.GetComponent<text>().TextView("잠시 뒤에 적병이 몰려옵니다.", 7f);
+        yield return new WaitForSeconds(30f);
+
+        StartCoroutine(Stage4());
+    }
+
+    IEnumerator Stage4()
+    {
+        CrySound();
+        StartSound();
+        textUI.GetComponent<text>().TextView("Stage 4", 8f);
+        Create(40);
+        yield return new WaitForSeconds(50f);
+
+        CrySound();
+        textUI.GetComponent<text>().TextView("추가 병력이 몰려옵니다!", 8f);
+        Create(50);
+        yield return new WaitForSeconds(50f);
+        
+        textUI.GetComponent<text>().TextView("잠시 뒤에 적병이 몰려옵니다.", 7f);
+        yield return new WaitForSeconds(30f);
+
+        StartCoroutine(Stage5());
+    }
+
+    IEnumerator Stage5()
+    {
+        CrySound();
+        StartSound();
+        textUI.GetComponent<text>().TextView("Stage 5", 8f);
+        Create(60);
+        yield return new WaitForSeconds(50f);
+
+        CrySound();
+        textUI.GetComponent<text>().TextView("추가 병력이 몰려옵니다!", 8f);
+        Create(60);
+        yield return new WaitForSeconds(50f);
+        
+        textUI.GetComponent<text>().TextView("잠시 뒤에 적병이 몰려옵니다.", 7f);
+        yield return new WaitForSeconds(30f);
+
+        StartCoroutine(Stage6());
+    }
+
+     IEnumerator Stage6()
+    {
+        CrySound();
+        StartSound();
+        textUI.GetComponent<text>().TextView("Stage 6", 8f);
+        Create(60);
+        yield return new WaitForSeconds(50f);
+
+        CrySound();
+        textUI.GetComponent<text>().TextView("추가 병력이 몰려옵니다!", 8f);
+        Create(100);
+        yield return new WaitForSeconds(50f);
+        
+        textUI.GetComponent<text>().TextView("잠시 뒤에 적병이 몰려옵니다.", 7f);
+        yield return new WaitForSeconds(30f);
+
+        StartCoroutine(Stage7());
+    }
+
+     IEnumerator Stage7()
+    {
+        CrySound();
+        StartSound();
+        textUI.GetComponent<text>().TextView("Stage 7", 8f);
+        Create(100);
+        yield return new WaitForSeconds(50f);
+
+        CrySound();
+        textUI.GetComponent<text>().TextView("추가 병력이 몰려옵니다!", 8f);
+        Create(60);
+        yield return new WaitForSeconds(50f);
+        
+        textUI.GetComponent<text>().TextView("잠시 뒤에 적병이 몰려옵니다.", 7f);
+        yield return new WaitForSeconds(30f);
+
+        StartCoroutine(Stage8());
+    }
+
+    IEnumerator Stage8()
+    {
+        CrySound();
+        StartSound();
+        textUI.GetComponent<text>().TextView("Stage 8", 8f);
+        Create(120);
+        yield return new WaitForSeconds(50f);
+
+        CrySound();
+        textUI.GetComponent<text>().TextView("추가 병력이 몰려옵니다!", 8f);
+        Create(120);
+        yield return new WaitForSeconds(50f);
+        
+        textUI.GetComponent<text>().TextView("잠시 뒤에 적병이 몰려옵니다.", 7f);
+        yield return new WaitForSeconds(30f);
+
+        StartCoroutine(Stage9());
+    }
+
+    IEnumerator Stage9()
+    {
+        CrySound();
+        StartSound();
+        textUI.GetComponent<text>().TextView("Stage 8", 8f);
+        Create(100);
+        yield return new WaitForSeconds(50f);
+
+        CrySound();
+        textUI.GetComponent<text>().TextView("추가 병력이 몰려옵니다!", 8f);
+        Create(300);
+        yield return new WaitForSeconds(50f);
+        
+        yield return new WaitForSeconds(30f);
+
+        // StartCoroutine(Stage9());
     }
 }

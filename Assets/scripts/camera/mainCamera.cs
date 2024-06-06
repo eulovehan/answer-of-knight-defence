@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class mainCamera : MonoBehaviour
@@ -17,6 +18,9 @@ public class mainCamera : MonoBehaviour
  
     private float lockOnRange = 8f; // 락온 범위
     public GameObject currentTarget; // 현재 락온된 적
+    
+    private int weapon; // 플레이어 무기 상태
+    private bool isFoucs = false; // 조준 포커스
 
     void Start()
     {
@@ -27,6 +31,12 @@ public class mainCamera : MonoBehaviour
     }
 
     void Update() {
+        // 플레이어 무기 상태
+        weapon = player.GetComponent<player>().weapon;
+
+        // 조준 상태
+        isFoucs = player.GetComponent<player>().isFocus;
+
         // 락온 유효성 체크
         if (isLockOn && currentTarget != null) {
             LockOnCheck();
@@ -35,17 +45,39 @@ public class mainCamera : MonoBehaviour
     
     void LateUpdate()
     {
-        if (!isLockOn) {
-            CameraRotation();
-        }
+        switch (weapon) {
+            case 1: {
+                if (!isLockOn) {
+                    CameraRotation();
+                }
 
-        else {
-            Lockon();
-        }
+                else {
+                    Lockon();
+                }
 
-        // q키를 눌러 락온
-        if (Input.GetKeyDown(KeyCode.Q)) {
-            FindClosestEnemy();
+                // q키를 눌러 락온
+                if (Input.GetKeyDown(KeyCode.Q)) {
+                    FindClosestEnemy();
+                }
+                
+                break;
+            }
+
+            case 2: {
+                isLockOn = false;
+                currentTarget = null;
+
+                // if (!isFoucs) {
+                //     CameraRotation();   
+                // }
+
+                // else {
+                //     GunView();
+                // }
+                CameraRotation();   
+                
+                break;
+            }
         }
     }
 
@@ -165,5 +197,16 @@ public class mainCamera : MonoBehaviour
             currentTarget.GetComponent<knight>().isLockOn = false;
             currentTarget = null;
         }
+    }
+
+    void GunView() {
+        // 플레이어가 보는 방향 앞으로 화면 이동
+        Vector3 cameraPosition = player.position + player.forward * 0.15f;
+        cameraPosition.y = player.position.y + 1.9f;
+
+        // 카메라 방향을 플레이어가 보는 방향으로 회전
+        Vector3 smoothedPosition = Vector3.Lerp(transform.position, cameraPosition, 10f);
+        transform.position = smoothedPosition;
+        transform.LookAt(player.position + player.forward * 10f);
     }
 }

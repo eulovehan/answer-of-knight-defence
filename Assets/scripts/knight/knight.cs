@@ -8,7 +8,6 @@ public class knight : MonoBehaviour
     private Rigidbody rb;
     private Animator animator;
 
-    public GameObject player; // 주인공 캐릭터의 Transform
     public float detectionRange = 10f; // 적이 플레이어를 감지하는 범위
     public float attackRange = 1.3f; // 적의 공격 범위
     public float Speed = 5f; // 적의 이동 속도
@@ -18,8 +17,10 @@ public class knight : MonoBehaviour
     public float attackDamage = 15f;
     public bool isAttackDamage = false;
     public AudioClip[] audioClips; // 여러 개의 오디오 클립 배열
+    public GameObject endPortal; // 종료 포탈
+    public GameObject target;
+    public GameObject player;
 
-    private bool findPlayer = false;
     private bool isMove = false;
     private bool isMoveMotionSwitch = false;
     private float moveDuration = 0.1f;
@@ -54,11 +55,6 @@ public class knight : MonoBehaviour
         {
             animator.applyRootMotion = false;
         }
-
-        if (player == null)
-        {
-            Debug.LogError("Player transform is not assigned.");
-        }
         
         // Y축 회전을 고정하여 캐릭터가 넘어지지 않게 함
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
@@ -67,12 +63,18 @@ public class knight : MonoBehaviour
         if (audioSource1 == null)
         {
             Debug.LogError("AudioSource component missing from this game object. Please add one.");
+        } else {
+            audioSource1.maxDistance = 60f;
+            audioSource1.spatialBlend = 1f;
         }
 
         audioSource2 = gameObject.AddComponent<AudioSource>();
         if (audioSource2 == null)
         {
             Debug.LogError("AudioSource component missing from this game object. Please add one.");
+        } else {
+            audioSource2.maxDistance = 60f;
+            audioSource2.spatialBlend = 1f;
         }
 
         // 이펙트 모체
@@ -87,6 +89,13 @@ public class knight : MonoBehaviour
         {
             hitEffect = effect.GetComponent<ParticleSystem>();
         }
+
+        // 플레이어 찾기
+        GameObject[] findPlayer = GameObject.FindGameObjectsWithTag("Player");
+        foreach (GameObject find in findPlayer)
+        {
+            player = find;
+        }
     }
 
     // Update is called once per frame
@@ -100,10 +109,6 @@ public class knight : MonoBehaviour
             return;
         }
 
-        if (player != null) {
-            findPlayer = true;
-        }
-
         if (hp <= 0) {
             Death();
         }
@@ -115,9 +120,36 @@ public class knight : MonoBehaviour
         if (isDeath || isAttackFailed) {
             return;
         }
+
+        // 주변에 타겟이 있는지 찾기
+        if (target == null) {
+            FindTarget();
+        }
         
-        if (findPlayer) {
-            MoveToPlayer();
+        // 타겟이 있으면 타겟으로 이동
+        if (target) {
+            MoveToTarget();
+        }
+
+        // 타겟이 없으면 endPortal로 이동
+        else {
+            MoveToEndPortal();
+        }
+
+        // 타겟이 죽었으면 타겟 초기화
+        if (target) {
+            // 플레이어일 경우
+            if (target.CompareTag("Player")) {
+                if (target.GetComponent<player>().hp <= 0) {
+                    target = null;
+                }
+            }
+
+            else if (target.CompareTag("Team")) {
+                if (target.GetComponent<team>().hp <= 0) {
+                    target = null;
+                }
+            }
         }
 
         // 가드시 양옆 이동
@@ -130,22 +162,64 @@ public class knight : MonoBehaviour
         }
     }
 
-    void MoveToPlayer()
+    void FindTarget() {
+        // 10f 주변에 Player or Team 태그 타겟이 있는지 찾기
+        Collider[] colliders = Physics.OverlapSphere(transform.position, detectionRange);
+        foreach (Collider collider in colliders)
+        {
+            // 타겟 찾기
+            if (collider.CompareTag("Player"))
+            {
+                // 타겟이 죽었으면 취소
+                if (collider.GetComponent<player>().hp <= 0)
+                {
+                    break;
+                }
+
+                target = collider.gameObject;
+                break;
+            }
+
+            else if (collider.CompareTag("Team")) {
+                // 타겟이 죽었으면 취소
+                if (collider.GetComponent<team>().hp <= 0)
+                {
+                    break;
+                }
+
+                target = collider.gameObject;
+                break;
+            }
+        }
+    }
+
+    void MoveToEndPortal() {
+        Vector3 endPotalPosition = endPortal.transform.position;
+        endPotalPosition.y = transform.position.y; // 현재 위치의 y값으로 설정하여 y값을 무시
+        
+        Vector3 direction = (endPortal.transform.position - transform.position).normalized;
+
+        transform.LookAt(endPotalPosition);
+        rb.MovePosition(transform.position + direction * Speed * Time.fixedDeltaTime);
+        MoveAni(true);
+    }
+
+    void MoveToTarget()
     {
         if (isAttackMotion || isHit) {
             return;
         }
 
-        Transform PlayerTransform = player.transform;
-        float distanceToPlayer = Vector3.Distance(transform.position, PlayerTransform.position);
+        Transform targetTransform = target.transform;
+        float distanceToTarget = Vector3.Distance(transform.position, targetTransform.position);
 
-        Vector3 targetPosition = PlayerTransform.position;
+        Vector3 targetPosition = targetTransform.position;
         targetPosition.y = transform.position.y; // 현재 위치의 y값으로 설정하여 y값을 무시
 
         // 포착거리이면서 사정거리밖일 경우 뛰어오기
-        if (distanceToPlayer < detectionRange && distanceToPlayer > 3f)
+        if (distanceToTarget < detectionRange && distanceToTarget > 3f)
         {
-            Vector3 direction = (PlayerTransform.position - transform.position).normalized;
+            Vector3 direction = (targetTransform.position - transform.position).normalized;
 
             transform.LookAt(targetPosition);
             rb.MovePosition(transform.position + direction * Speed * Time.fixedDeltaTime);
@@ -153,10 +227,15 @@ public class knight : MonoBehaviour
         }
 
         // 사정거리 안에 들어왔을 경우
-        else if (distanceToPlayer <= 3f) {
+        else if (distanceToTarget <= 3f) {
             transform.LookAt(targetPosition);
             MoveAni(false);
             ActionChoice();
+        }
+
+        // 아니면 그냥 돌격
+        else {
+            MoveToEndPortal();
         }
     }
 
@@ -284,7 +363,7 @@ public class knight : MonoBehaviour
         animator.SetBool("isGuard", false);
     }
 
-    public void Hit(float damage) {
+    public void Hit(float damage, bool isGun = false) {
         if (isHit) {
             return;
         }
@@ -293,7 +372,8 @@ public class knight : MonoBehaviour
             return;
         }
         
-        StartCoroutine(HitWait(0.4f));
+        float hitWait = !isGun ? 0.4f : 0.1f;
+        StartCoroutine(HitWait(hitWait));
         
         // 막음
         if (isGuard) {
@@ -303,9 +383,22 @@ public class knight : MonoBehaviour
             audioSource2.Play();
 
             // 가드 이펙트
-            ParticleSystem instantiatedEffect = Instantiate(guardEffect, transform.position + new Vector3(0, 1.5f, 0), Quaternion.identity);
-            instantiatedEffect.Play();
-            Destroy(instantiatedEffect.gameObject, 1f); // 적절한 시간 후에 파티클 시스템 삭제
+            try {
+                ParticleSystem instantiatedEffect = Instantiate(guardEffect, transform.position + new Vector3(0, 1.5f, 0), Quaternion.identity);
+                instantiatedEffect.Play();
+
+                Destroy(instantiatedEffect.gameObject, 1f); // 적절한 시간 후에 파티클 시스템 삭제
+            }
+
+            catch (System.Exception e) {
+                
+            }
+            
+            
+            // 총을 이용한 공격이면 가드해도 대미지 들어옴
+            if (isGun) {
+                hp -= damage;
+            }
             
             return;
         }
@@ -325,9 +418,15 @@ public class knight : MonoBehaviour
         }
 
         // 피격 이펙트
-        ParticleSystem instantiatedHitEffect = Instantiate(hitEffect, transform.position + new Vector3(0, 1.5f, 0), Quaternion.identity);
-        instantiatedHitEffect.Play();
-        Destroy(instantiatedHitEffect.gameObject, 1f); // 적절한 시간 후에 파티클 시스템 삭제
+        try {
+            ParticleSystem instantiatedHitEffect = Instantiate(hitEffect, transform.position + new Vector3(0, 1.5f, 0), Quaternion.identity);
+            instantiatedHitEffect.Play();
+            Destroy(instantiatedHitEffect.gameObject, 1f); // 적절한 시간 후에 파티클 시스템 삭제
+        }
+
+        catch (System.Exception e) {
+            
+        }
         
         animator.SetBool("isHit", true);
         animator.SetLayerWeight(0, Mathf.Lerp(animator.GetLayerWeight(0), 0, moveDuration * Time.fixedDeltaTime));
@@ -341,11 +440,11 @@ public class knight : MonoBehaviour
         animator.SetLayerWeight(0, Mathf.Lerp(animator.GetLayerWeight(0), 0, moveDuration * Time.fixedDeltaTime));
         animator.CrossFade("Death", 1f);
 
-        // GameObject[] findText = GameObject.FindGameObjectsWithTag("textUI");
-        // foreach (GameObject textUI in findText)
-        // {
-        //     textUI.GetComponent<text>().TextView("적이 쓰러졌습니다.");
-        // }
+        // n초 뒤 제거
+        StartCoroutine(DestroyCoroutine(1f));
+
+        // 플레이어 찾기
+        player.GetComponent<player>().Kill();
     }
 
     public void Attack() {
@@ -360,17 +459,13 @@ public class knight : MonoBehaviour
             return;
         }
 
-        if (hit.collider.CompareTag("Player"))
-        {
+        // 상대 피격 함수 실행
+        if (hit.collider.CompareTag("Player")) {
             AttackResult result = hit.collider.GetComponent<player>().Hit(attackDamage);
+        }
 
-            // // 상대방이 가드를 성공하면 딜레이 발생
-            // if (result == AttackResult.Guard) {
-            //     animator.SetBool("isAttackFailed", true);
-            //     animator.SetLayerWeight(0, Mathf.Lerp(animator.GetLayerWeight(0), 0, moveDuration * Time.fixedDeltaTime));
-            //     animator.CrossFade("AttackFailed", 0.01f);
-            //     StartCoroutine(AttackFailedWait(0.8f));
-            // }
+        else if (hit.collider.CompareTag("Team")) {
+            hit.collider.GetComponent<team>().Hit(attackDamage);
         }
     }
 
@@ -405,5 +500,12 @@ public class knight : MonoBehaviour
         // N초 동안 공격
         yield return new WaitForSeconds(attackDuration);
         isAttackDamage = false;
+    }
+
+    // 30초뒤 제거
+    IEnumerator DestroyCoroutine(float waitDuration)
+    {
+        yield return new WaitForSeconds(waitDuration);
+        Destroy(gameObject);
     }
 }

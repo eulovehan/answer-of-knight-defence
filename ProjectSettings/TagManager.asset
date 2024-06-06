@@ -12,6 +12,13 @@ TagManager:
   - sideTextUI
   - guardParticle
   - hitParticle
+  - Team
+  - weapon1
+  - weapon2
+  - TeamCreate
+  - GameOverFade
+  - ScoreStore
+  - NameStore
   layers:
   - Default
   - TransparentFX
@@ -19,7 +26,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - Player
   - 
   - 
   - 
