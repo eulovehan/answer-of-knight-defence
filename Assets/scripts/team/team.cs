@@ -11,12 +11,12 @@ public class team : MonoBehaviour
     public GameObject target = null;
     public float Speed = 5f; // 이동 속도
     public float moveDuration = 0.1f; // 이동 애니메이션 시간
-    public float hp = 600f;
+    public float hp = 300f;
     public AudioClip[] audioClips; // 여러 개의 오디오 클립 배열
     public AudioSource audioSource1;
     public AudioSource audioSource2;
 
-    private float detectionRange = 9f; // 적을 감지하는 범위
+    private float detectionRange = 14f; // 적을 감지하는 범위
     private bool isMove = false;
     private bool isMoveMotionSwitch = false;
     public bool isAttackMotion = false;

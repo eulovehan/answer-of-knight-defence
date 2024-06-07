@@ -39,10 +39,10 @@ public class teamStop : MonoBehaviour
     void Update() {
         int coin = player.GetComponent<player>().coin;
         // e를 누르면 팀 생성
-        if (Input.GetKeyDown(KeyCode.E) && inTrigger && coin >= 700)
+        if (Input.GetKeyDown(KeyCode.E) && inTrigger && coin >= 400)
         {
             // 금액 차감
-            player.GetComponent<player>().coin -= 700;
+            player.GetComponent<player>().coin -= 400;
             
             // 팀 생성
             teamCreate.GetComponent<teamCreate>().CreateTeam();
@@ -54,7 +54,7 @@ public class teamStop : MonoBehaviour
     {
         if (other.gameObject == player)
         {
-            sideTextUI.GetComponent<text>().TextViewFix("팀 생성 (700 coin) (E)");
+            sideTextUI.GetComponent<text>().TextViewFix("기사 지원 (400 coin) (E)");
             inTrigger = true;
         }
     }

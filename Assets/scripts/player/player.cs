@@ -1,5 +1,4 @@
 using System.Collections;
-using Microsoft.Unity.VisualStudio.Editor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -912,6 +911,7 @@ public class player : MonoBehaviour
 
     public void Death(bool isEndPoin = false) {
         isDeath = true;
+        GunMotion = 0;
         animator.SetBool("isDeath", true);
         animator.SetLayerWeight(0, Mathf.Lerp(animator.GetLayerWeight(0), 0, moveDuration * Time.fixedDeltaTime));
         animator.CrossFade("Death", moveDuration);
